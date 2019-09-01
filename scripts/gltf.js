@@ -1,40 +1,4 @@
 
-/*
-var LoadGLFTAccessors = function(data) {
-
-   $.each(data, function (key, val) {
-		accessors.push(val);
-	});
-}
-
-var LoadGLFTBufferViews = function(data) {
-
-   $.each(data, function (key, val) {
-		bufferviews.push(val);
-	});
-}
-*/
-/*
-var OnLoadGLFTBInary(oEvent) { 
-	  var arrayBuffer = oReq.response;
-	  var byteArray = new Uint8Array(arrayBuffer);
-	  
-}
-
-var LoadGLFTBinary = function(filename) {
-
-	var oReq = new XMLHttpRequest();
-	oReq.open("GET", filename, true);
-	oReq.responseType = "arraybuffer";
-
-	oReq = OnLoadGLFTBInary;
-	oReq.onload = function(oEvent) {
-	  var arrayBuffer = oReq.response;
-	  var byteArray = new Uint8Array(arrayBuffer);
-	};
-	oReq.send();
-}
-*/
 var LoadGLFTBuffers = function(data, buffers) {
 
    $.each(data, function (key, val) {
@@ -55,29 +19,47 @@ var LoadGLFTBuffers = function(data, buffers) {
 
 var GLTFOutput = function(accessors, bufferviews, buffers, bufferindex) {
 	
-	//LoadGLFT('assets/AnimatedCube.gltf');
-	//console.log("here")
-	//for(var i= 0; i < accessors.length; ++i)
 	$.each(accessors, function (index, acc)
 	{
-		//var acc = accessors[i];
-		if((acc.componentType == 5126) && (acc.type == "VEC3"))
+		if(acc.componentType == 5126)
 		{
-			console.log('ACC');
-			var accOffset = acc.offset;
-			var accCount = acc.count;
-			var bufferView = bufferviews[acc.bufferView];
-			var bufOffset = bufferView.byteOffset;
-			var bufLength = bufferView.byteLength;
-			// target??
-			if(bufferindex == bufferView.buffer)
+			var elements = 0;
+			if(acc.type == "VEC2") elements = 2;
+			else if(acc.type == "VEC3") elements = 3;
+			else if(acc.type == "VEC4") elements = 4;
+			
+			if(elements > 0)
 			{
-				var buffer = buffers[bufferView.buffer];
-				var data = new Float32Array(buffer.data, bufOffset, bufLength);
+				console.log('ACC ' + elements + ' ' + acc.count);
 				
-				for(j = 0; j < data.length; j += 3)
+				var accOffset = acc.offset;
+				var accCount = acc.count;
+				var bufferView = bufferviews[acc.bufferView];
+				var bufOffset = bufferView.byteOffset;
+				var bufLength = bufferView.byteLength;
+
+				if(bufferindex == bufferView.buffer)
 				{
-					console.log(data[j] + ' ' + data[j + 1] + ' ' + data[j + 2]);
+					var buffer = buffers[bufferView.buffer];
+					var data = new DataView(buffer.data);					
+					
+					var output = '';
+					var count = 0;
+					var index = 0;
+					
+					for(j = 0; j < bufLength; j += Float32Array.BYTES_PER_ELEMENT)
+					{
+						var b = data.getFloat32(j + bufOffset, true);
+						output += b + ' ';
+						if(++count >= elements)
+						{
+							output = index + ') ' + output;
+							console.log(output);
+							count = 0;
+							index += 1;
+							output = '';
+						}
+					}
 				}
 			}
 		}
@@ -94,7 +76,6 @@ var LoadGLFT = function(filename) {
 			
 		$.each(data.accessors, function (key, val) {
 			accessors.push(val);
-			console.log(val.bufferView);
 		});
 				
 		$.each(data.bufferViews, function (key, val) {
@@ -109,17 +90,14 @@ var LoadGLFT = function(filename) {
 
 			oReq.onload = function(oEvent) {
 			  var arrayBuffer = oReq.response;
-			  val.data = new Uint8Array(arrayBuffer);
+			  val.data = arrayBuffer;
 			  buffers.push(val);
 			  
 			  GLTFOutput(accessors, bufferviews, buffers, buffers.length - 1);
 			};
 
 			oReq.send();
-		});
-	
-		//LoadGLFTBuffers(data, buffers);
-		
+		});		
     });
 }
 
